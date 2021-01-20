@@ -1,0 +1,1 @@
+An API for managing the Movies database with correspoding Ratings/Reviews updated by the different system users using Nodejs , Mysql and Redis . 
