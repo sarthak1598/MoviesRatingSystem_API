@@ -1,0 +1,21 @@
+{
+  "name": "ratingapi",
+  "version": "1.0.0",
+  "description": "an secure api for moview reviews and ratings ; ",
+  "main": "index.js",
+  "scripts": {
+    "test": "nodemon index.js"
+  },
+  "author": "sarthak1598",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "express-validator": "^6.9.2",
+    "helmet": "^4.3.1",
+    "ioredis": "^4.19.4",
+    "jsonwebtoken": "^8.5.1",
+    "morgan": "^1.10.0",
+    "mysql": "^2.18.1",
+    "nodemon": "^2.0.7"
+  }
+}

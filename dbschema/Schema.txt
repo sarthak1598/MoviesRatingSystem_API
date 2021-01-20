@@ -1,0 +1,14 @@
+// Rating database consists of total of 3 tables (SCHEMA)
+
+1 . users table . 
+2 . movies table . 
+3 . comments table . 
+
+Tabular structure 
+
+users(user_id , email , password)
+
+movies(movie_id , movie_name , raters , ratingstars , average_rating)
+
+comments(c_id , user_id , movie_id , comment , rating)
+
