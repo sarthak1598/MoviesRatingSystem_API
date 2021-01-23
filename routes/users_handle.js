@@ -2,7 +2,6 @@ const express = require("express") ;
 const router = express.Router() ; 
 
 const con = require("../dbschema/dbconfig") ; 
-
 const {check , validationResult, checkSchema} = require('express-validator'); 
 
 const jwt = require("jsonwebtoken") ;
@@ -26,8 +25,8 @@ router.get('/' ,(req , res) => {
 
 // registration route/ validations logic updated   
 router.post('/register', [
-    check('user').isLength({ min: 3 }),
-        check('pass').isLength({ min : 3})
+    check('user').isLength({ min: 4}),
+        check('pass').isLength({ min : 4}).isAlphanumeric()
   ] , 
        (req , res) => { 
         let err = validationResult(req) ; 
@@ -55,8 +54,8 @@ router.post('/register', [
 
 // Login/auth check route  / validated
  router.post("/login" , [
-    check('user').isLength({min : 3}).escape().trim(),
-    check('pass').isLength({ min: 3 }).escape().trim()
+    check('user').isLength({min : 4}).escape().trim(),
+    check('pass').isLength({ min: 4 }).escape().trim().isAlphanumeric()
 
   ] , (req , res) => { 
      console.log("route working") ; 
@@ -104,11 +103,12 @@ router.post('/register', [
 
 }); 
 
-// auth middleware to further routing points in application
-// router.use(middleware)
+// auth middleware to the further protected routes 
+
+ router.use(middleware)
 
 // show movies present in the database 
-router.get('/showmovies' , middleware , (req , res) =>{ 
+router.get('/showmovies' , (req , res) =>{ 
     // list all movies 
      console.log(req.user)
     let query = "select movie_id , movie_name , average_rating from movies"  
@@ -194,6 +194,7 @@ router.post('/ratemoviebyid' , (req , res) => {
             }
 
 else { 
+
 let q3 = "update movies set ratingstars = ratingstars + ? , raters = raters + 1 where movie_id = ? "
 let q4 = "select ratingstars , raters from movies where movie_id = ? " ; 
   
@@ -241,7 +242,7 @@ router.get('/comments' , (req , res) =>{
      // offset
         const offset = (page - 1) * limit
      // query for fetching data using limit /offset clause 
-     const Query = "select users.name AS Ratedby , movies.movie_name AS movie , comments.comment , comments.rating AS ratingstars from movies JOIN comments ON comments.movie_id=movies.movie_id JOIN users ON users.user_id = comments.user_id order by comments.rating DESC limit ? OFFSET ?"
+     const Query = "select users.name AS Ratedby , movies.movie_name AS movie , comments.comment , comments.rating AS ratingstars from movies JOIN comments ON comments.movie_id = movies.movie_id JOIN users ON users.user_id = comments.user_id order by comments.rating DESC limit ? OFFSET ?"
      
        con.query(Query , [limit , offset] , function (error, results, fields) {
  
@@ -249,18 +250,19 @@ router.get('/comments' , (req , res) =>{
                     return res.send(400)
               } 
          var jsonResult = {
-           'page_number': page,
-           'comments':results
+           'Current page_number': page,
+           'All users comments':results
          } 
  
        var myJsonString = JSON.parse(JSON.stringify(jsonResult));
+
          res.statusMessage = "comments for page "+page;
             res.json(myJsonString);
           res.end();
  
        })
-
 })
+
 module.exports = router ; 
 
 
