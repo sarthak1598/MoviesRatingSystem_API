@@ -6,18 +6,13 @@ const helmet = require('helmet') ;
 const sanitize = require('express-validator') ; 
 const bodyparser = require("body-parser") ;
 const jwt = require("jsonwebtoken") ;
-//const user_routes
-const morgan = require("morgan") ; // request logging middleware  
+
+// request logging middleware  
+const morgan = require("morgan") ; 
 const router = require('./routes/users_handle');
 
 process.env.AUTH_KEY = "jwtauthtokenpassword"; 
-// redis client /server set up 
-
-// const reddis-ratelimiter = require('./middlewares/ratelimiter')
 // middlewares registration including security 
-
-
-
 
 app.use(helmet()) ; 
 app.use(bodyparser.urlencoded({extended:true})) ; 
@@ -27,12 +22,17 @@ app.use(bodyparser.json()) ;
 // logging
 app.use(morgan('dev'));
 
+// port 
 const port = process.env.PORT || 4000  ; 
 
-app.listen(port , () => {
+// server 
+app.listen(port , (error) => {
+    if(error){
+        console.log("server error...")
+    }
     console.log("Server started on port "+port) ; 
 
 });
 
-//app.use(chechstatus)
+//routing 
 app.use('/api' , router) 

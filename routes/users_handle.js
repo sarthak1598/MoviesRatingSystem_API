@@ -11,53 +11,10 @@ const { response } = require("express");
 const { query } = require("../dbschema/dbconfig");
 const { contentSecurityPolicy } = require("helmet");
 
-const priv_key = "secretauthmessage" ; 
+const middleware = require('../middlewares/jwt_auth') 
+const checkstatus = require('../middlewares/ratelimiter')
 
-
-const redis = require('ioredis')
-
- const client = redis.createClient({
-   port: process.env.REDIS_PORT || 6379,
-       host: process.env.REDIS_HOST || 'localhost', 
-
- })
-
- client.on('connect', function () {
-   console.log('connected to the redis server');
- });
-
- // redis connection error handle
- client.on('error' , (err) => {
-     console.log("erro connecting to reddis")
-     return 
- })
-
-// reddis
-async function checkstatus(req , res ,  next){
-    // let res
-   let counter
-    let ip = req.ip // exported the ip address of current request 
-    try {
-        counter = await client.incr(ip)
-
-    } 
-       catch (err) {
-        throw err
-    }
-
-    client.expire(ip, 15) 
-
-    if (counter > 10) {
-        return res.sendStatus(500).send('Server overloaded with so many requests , Server alert!!')
-    }
-
-    else{ 
-           // calling the furthere code after middleware in the route 
-           next()
-    } 
-}
-
-// middleware integrated with every application route  
+// ratelim middleware integrated with every application route  
  router.use(checkstatus)
 
 // main home route 
@@ -98,7 +55,7 @@ router.post('/register', [
 
 // Login/auth check route  / validated
  router.post("/login" , [
-    check('user').isLength({min : 3}).escape().trim() ,
+    check('user').isLength({min : 3}).escape().trim(),
     check('pass').isLength({ min: 3 }).escape().trim()
 
   ] , (req , res) => { 
@@ -109,22 +66,24 @@ router.post('/register', [
         return res.status(500).json({erros : err.array()})
      }
 // storing req parameters for external use 
-    let name = req.body.user ; 
-    let pass = req.body.pass ; 
+    let name  = req.query.user ; 
+    let pass = req.query.pass ; 
 
     // query ;
-    con.query('select * from users where name = ?' , [name] , (error , results , fields) => {  
+    let query = "select * from users where name = ?"
+    con.query(query , [name] , (error , results , fields) => {  
          if(!error){
-
+              //  console.log(results.length) 
              if(results.length == 0 ){ 
-                  res.status(404).send("User not found") ; 
+                  return res.status(404).send("User not found") ; 
              }
 
              if(results.length > 0 ){ 
                  // return res.status
+                  req.user = name ; 
                if(pass == results[0].password){    
                       // jwt token generated after success login 
-                  var token = jwt.sign(results[0].password , priv_key);
+                  var token = jwt.sign(results[0].password , "privateauthkey");
                   console.log(token) ; 
                // send response as token value 
                         res.json({status:"user found" , User_token : token });
@@ -139,42 +98,19 @@ router.post('/register', [
          }
 
          else{ 
-             res.send("Query ecxecution failed") ;    
+             return res.send("Query ecxecution failed") ;    
          }
     });
 
 }); 
 
-// new route for jwt authentication to be hitted with token passed as json using express middlewares
-router.post('/tokenauth' , (req , res) => { 
-       let token = req.query.token ; 
-            checktoken(res , token) ; 
-            
-});
-
-// jwt authentication fucntion ; 
-function checktoken(res ,info){
-    if(info){
-        jwt.verify(info , priv_key , (err) => {
-             if(err){
-                 return res.status(500).send("Token is not valid !! auth failed") ;
-             }     
-             else{
-                return res.json({status:"Auth Token verified" , message:"user authenticated successsfully"}) ; 
-            }
-        })
-    }
-
-    else{ 
-        res.send("Please provide the auth token !");
-    }
-}
-
+// auth middleware to further routing points in application
+// router.use(middleware)
 
 // show movies present in the database 
-router.get('/showmovies' , (req , res) =>{ 
+router.get('/showmovies' , middleware , (req , res) =>{ 
     // list all movies 
-
+     console.log(req.user)
     let query = "select movie_id , movie_name , average_rating from movies"  
     con.query(query ,(error , results , fields) => {
         if(error){ 
@@ -183,7 +119,7 @@ router.get('/showmovies' , (req , res) =>{
         }
         else{ 
             
-             res.status(201).json({status:true , info: results});
+             res.status(201).json({status : req.user , info: results});
         }
     });
 
@@ -208,6 +144,7 @@ router.get('/showmovies' , (req , res) =>{
  // route for fetching total ratings
 router.get('/totalratings' , (req , res) => {
   let q = "select totalraters from movies where movie_id = 1"
+   console.log(req.user)
   con.query(q , (error , results) => {
       if(error){
           res.send("error")
@@ -252,7 +189,8 @@ router.post('/ratemoviebyid' , (req , res) => {
    //   let q2 = "select rating , ratingstars from movies where movie_id = mid"
      con.query(query , [mid , mcomm , mrating] , (error) => {
             if(error){
-                res.send("error processing query")
+                // always return the response when error to prevent server crash
+                return res.send("error processing query")
             }
 
 else { 
@@ -275,7 +213,7 @@ let q4 = "select ratingstars , raters from movies where movie_id = ? " ;
 
             // q5 query execution 
             con.query(q5 , [avgrvalue , mid],(err) =>{
-                if(err){res.sendStatus(400)}
+                if(err){return res.sendStatus(400)}
                 console.log(avgrvalue)
               
             })
@@ -308,7 +246,7 @@ router.get('/comments' , (req , res) =>{
        con.query(Query , [limit , offset] , function (error, results, fields) {
  
               if (error) {
-                    res.sendStatus(400) 
+                    return res.send(400)
               } 
          var jsonResult = {
            'page_number': page,
