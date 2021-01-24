@@ -1,5 +1,4 @@
-An API for managing and maintaining the movies in the database with correspoding Ratings/Reviews updated by the different system users using Nodejs , Mysql . 
-And Redis server rate limiting implementation . 
+An API for managing and maintaining the movies in the database with correspoding Ratings/Reviews updated by the different system users using Nodejs , Mysql and Redis.
 
 Run terminal 1 : nodemon apiserver.js  # to start node server 
 Run terminal 2(seperate) :  redis-server  # to start redis 
